@@ -92,30 +92,27 @@ export function TambahSupplierModal({ supplier, onClose, onSaved }: TambahSuppli
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Tipe Supplier" required>
+                <Field label="Tipe Supplier">
                   <LookupSearchSelectField
                     tipe="tipe-supplier"
                     label="Tipe Supplier"
                     value={tipe}
                     onChange={setTipe}
                     placeholder="Cari tipe supplier..."
-                    required
                   />
                 </Field>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Nomor Handphone" required>
+                <Field label="Nomor Handphone">
                   <input
-                    required
                     value={telepon}
                     onChange={(e) => setTelepon(e.target.value)}
                     placeholder="081234567890"
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Email" required>
+                <Field label="Email">
                   <input
-                    required
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -147,9 +144,8 @@ export function TambahSupplierModal({ supplier, onClose, onSaved }: TambahSuppli
             <div className="space-y-4 border-t border-zinc-100 pt-5">
               <p className="text-sm font-semibold text-zinc-700">Informasi Tambahan</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Kota" required>
+                <Field label="Kota">
                   <input
-                    required
                     value={kota}
                     onChange={(e) => setKota(e.target.value)}
                     placeholder="Jakarta"
@@ -167,9 +163,8 @@ export function TambahSupplierModal({ supplier, onClose, onSaved }: TambahSuppli
                   />
                 </Field>
               </div>
-              <Field label="Alamat" required>
+              <Field label="Alamat">
                 <textarea
-                  required
                   value={alamat}
                   onChange={(e) => setAlamat(e.target.value)}
                   placeholder="Masukkan alamat lengkap"

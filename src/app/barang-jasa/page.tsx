@@ -355,10 +355,14 @@ function ImportResultModal({ summary, onClose }: { summary: ImportSummary; onClo
           </button>
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
               <p className="text-xs text-emerald-600">Berhasil</p>
               <p className="text-xl font-bold text-emerald-600">{summary.created}</p>
+            </div>
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+              <p className="text-xs text-blue-600">Diperbarui</p>
+              <p className="text-xl font-bold text-blue-600">{summary.updated ?? 0}</p>
             </div>
             <div className="rounded-lg border border-red-100 bg-red-50 px-3 py-2">
               <p className="text-xs text-red-500">Gagal</p>

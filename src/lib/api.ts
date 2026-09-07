@@ -44,6 +44,7 @@ export interface PagedResult<T> {
 
 export interface ImportSummary {
   created: number;
+  updated?: number;
   failed: number;
   errors: { row: number; message: string }[];
 }
