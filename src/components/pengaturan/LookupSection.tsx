@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { confirmDelete } from "@/lib/confirm";
 import { Lookup, LookupTipe } from "@/lib/types";
 import { EmptyState } from "@/components/ui/Panel";
 import { Pagination, paginate } from "@/components/ui/Pagination";
@@ -42,7 +43,7 @@ export function LookupSection({ tipe, groupLabel, label, subtitle, showJatuhTemp
   const paged = filtered ? paginate(filtered, page, pageSize) : null;
 
   async function handleDelete(item: Lookup) {
-    if (!confirm(`Hapus ${label.toLowerCase()} "${item.nama}"?`)) return;
+    if (!(await confirmDelete(`Hapus ${label.toLowerCase()} "${item.nama}"?`))) return;
     await api.deleteLookup(item.id);
     refresh();
   }

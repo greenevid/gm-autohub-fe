@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { confirmDelete } from "@/lib/confirm";
 import { useAuth } from "@/lib/auth-context";
 import { USER_ROLE_LABELS, User } from "@/lib/types";
 import { formatDateLong } from "@/lib/format";
@@ -33,7 +34,7 @@ export default function ManajemenUserPage() {
   }, [currentUser]);
 
   async function handleDelete(item: User) {
-    if (!confirm(`Hapus user "${item.nama}"?`)) return;
+    if (!(await confirmDelete(`Hapus user "${item.nama}"?`))) return;
     setError(null);
     try {
       await api.deleteUser(item.id);

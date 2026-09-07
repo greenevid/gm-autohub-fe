@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import clsx from "clsx";
+
+const SEARCH_THRESHOLD = 6;
 
 export interface SelectOption {
   value: string;
@@ -31,7 +33,9 @@ export function Select({
   ...rest
 }: SelectProps) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -43,7 +47,15 @@ export function Select({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!open) setQuery("");
+    else searchRef.current?.focus();
+  }, [open]);
+
   const selected = options.find((o) => o.value === value);
+  const showSearch = options.length > SEARCH_THRESHOLD;
+  const q = query.trim().toLowerCase();
+  const filteredOptions = showSearch && q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options;
 
   return (
     <div ref={containerRef} className={clsx("relative", className)}>
@@ -64,27 +76,43 @@ export function Select({
       </button>
 
       {open && (
-        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-zinc-200 bg-white py-1 shadow-lg">
-          {options.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-zinc-400">Tidak ada pilihan</p>
-          ) : (
-            options.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => {
-                  onChange(o.value);
-                  setOpen(false);
-                }}
-                className={clsx(
-                  "block w-full px-3 py-1.5 text-left text-sm transition-colors",
-                  o.value === value ? "bg-green-50 font-medium text-green-700" : "text-zinc-700 hover:bg-zinc-50"
-                )}
-              >
-                {o.label}
-              </button>
-            ))
+        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
+          {showSearch && (
+            <div className="relative border-b border-zinc-100 p-1.5">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+              <input
+                ref={searchRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Cari..."
+                className="w-full rounded-md border border-zinc-200 py-1.5 pl-8 pr-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
           )}
+          <div className="max-h-56 overflow-y-auto py-1">
+            {filteredOptions.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-zinc-400">
+                {options.length === 0 ? "Tidak ada pilihan" : "Tidak ditemukan"}
+              </p>
+            ) : (
+              filteredOptions.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(o.value);
+                    setOpen(false);
+                  }}
+                  className={clsx(
+                    "block w-full px-3 py-1.5 text-left text-sm transition-colors",
+                    o.value === value ? "bg-green-50 font-medium text-green-700" : "text-zinc-700 hover:bg-zinc-50"
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>

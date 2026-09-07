@@ -6,6 +6,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { ArrowLeft, Ban, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { confirmDelete } from "@/lib/confirm";
 import { Invoice, Kendaraan, Pelanggan } from "@/lib/types";
 import { formatDateLong, formatRupiah } from "@/lib/format";
 import { EmptyState } from "@/components/ui/Panel";
@@ -96,7 +97,7 @@ export default function PelangganDetailPage() {
 
   async function handleDelete() {
     if (!pelanggan) return;
-    if (!confirm(`Hapus pelanggan "${pelanggan.nama}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    if (!(await confirmDelete(`Hapus pelanggan "${pelanggan.nama}"? Tindakan ini tidak bisa dibatalkan.`))) return;
     setBusy(true);
     try {
       await api.deletePelanggan(pelanggan.id);
@@ -107,7 +108,7 @@ export default function PelangganDetailPage() {
   }
 
   async function handleDeleteKendaraan(k: Kendaraan) {
-    if (!confirm(`Hapus kendaraan ${k.platNomor}?`)) return;
+    if (!(await confirmDelete(`Hapus kendaraan ${k.platNomor}?`))) return;
     await api.deleteKendaraan(k.id);
     setKendaraan((prev) => prev.filter((item) => item.id !== k.id));
   }

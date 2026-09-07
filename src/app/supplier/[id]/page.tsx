@@ -6,6 +6,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { ArrowLeft, Ban, CheckCircle2, Filter, Pencil, Target, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { confirmDelete } from "@/lib/confirm";
 import { Pembelian, Supplier } from "@/lib/types";
 import { formatDateLong, formatRupiah } from "@/lib/format";
 import { EmptyState } from "@/components/ui/Panel";
@@ -90,7 +91,7 @@ export default function SupplierDetailPage() {
 
   async function handleDelete() {
     if (!supplier) return;
-    if (!confirm(`Hapus supplier "${supplier.nama}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    if (!(await confirmDelete(`Hapus supplier "${supplier.nama}"? Tindakan ini tidak bisa dibatalkan.`))) return;
     setBusy(true);
     try {
       await api.deleteSupplier(supplier.id);

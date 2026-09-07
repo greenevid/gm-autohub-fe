@@ -6,6 +6,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { ArrowLeft, Ban, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { confirmDelete } from "@/lib/confirm";
 import { Karyawan, PeriodeGaji, Posisi, SATUAN_GAJI_OPTIONS } from "@/lib/types";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { EmptyState } from "@/components/ui/Panel";
@@ -68,7 +69,7 @@ export default function KaryawanDetailPage() {
 
   async function handleDelete() {
     if (!karyawan) return;
-    if (!confirm(`Hapus karyawan "${karyawan.nama}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    if (!(await confirmDelete(`Hapus karyawan "${karyawan.nama}"? Tindakan ini tidak bisa dibatalkan.`))) return;
     setBusy(true);
     try {
       await api.deleteKaryawan(karyawan.id);

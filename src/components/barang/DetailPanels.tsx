@@ -4,6 +4,7 @@ import { ReactNode, useState } from "react";
 import clsx from "clsx";
 import { Ban, CheckCircle2, Package, Pencil, Trash2, Wrench, X } from "lucide-react";
 import { api } from "@/lib/api";
+import { confirmDelete } from "@/lib/confirm";
 import { Barang, Jasa, Paket, Supplier } from "@/lib/types";
 import { formatDateLong, formatRupiah } from "@/lib/format";
 
@@ -131,7 +132,7 @@ export function BarangDetailPanel({ barang, supplierList, onClose, onEdit, onUpd
   }
 
   async function handleDelete() {
-    if (!confirm(`Hapus barang "${barang.nama}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    if (!(await confirmDelete(`Hapus barang "${barang.nama}"? Tindakan ini tidak bisa dibatalkan.`))) return;
     setDeleting(true);
     try {
       await api.deleteBarang(barang.id);
@@ -258,7 +259,7 @@ export function JasaDetailPanel({ jasa, onClose, onEdit, onUpdated, onDeleted }:
   }
 
   async function handleDelete() {
-    if (!confirm(`Hapus jasa "${jasa.nama}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    if (!(await confirmDelete(`Hapus jasa "${jasa.nama}"? Tindakan ini tidak bisa dibatalkan.`))) return;
     setDeleting(true);
     try {
       await api.deleteJasa(jasa.id);
@@ -324,7 +325,7 @@ export function PaketDetailPanel({ paket, barangList, jasaList, onClose, onEdit,
   }
 
   async function handleDelete() {
-    if (!confirm(`Hapus paket "${paket.nama}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    if (!(await confirmDelete(`Hapus paket "${paket.nama}"? Tindakan ini tidak bisa dibatalkan.`))) return;
     setDeleting(true);
     try {
       await api.deletePaket(paket.id);

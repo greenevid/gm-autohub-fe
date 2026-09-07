@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { CheckCircle2, FileText, Pencil, Plus, Search, Trash2, Users, XCircle } from "lucide-react";
 import { api } from "@/lib/api";
+import { confirmDelete } from "@/lib/confirm";
 import { Karyawan, KaryawanStats, PeriodeGaji, Posisi } from "@/lib/types";
 import { formatDate, formatRupiah } from "@/lib/format";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -378,7 +379,7 @@ function PosisiTab({ posisi, onChanged }: { posisi: Posisi[] | null; onChanged: 
   const paged = filtered ? paginate(filtered, page, pageSize) : null;
 
   async function handleDelete(p: Posisi) {
-    if (!confirm(`Hapus posisi "${p.nama}"?`)) return;
+    if (!(await confirmDelete(`Hapus posisi "${p.nama}"?`))) return;
     await api.deletePosisi(p.id);
     onChanged();
   }
