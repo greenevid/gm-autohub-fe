@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FileText, Plus, Save, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { Barang } from "@/lib/types";
+import { Barang, Lokasi } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { IdSearchSelectField } from "@/components/ui/IdSearchSelectField";
 import { Select } from "@/components/ui/Select";
@@ -26,14 +26,16 @@ const inputClass =
 export default function PenerimaanBarangBaruPage() {
   const router = useRouter();
   const [allBarang, setAllBarang] = useState<Barang[]>([]);
+  const [lokasiList, setLokasiList] = useState<Lokasi[]>([]);
 
   useEffect(() => {
     api.barang({ limit: 1000 }).then((res) => setAllBarang(res.data));
+    api.lokasi().then(setLokasiList);
   }, []);
 
   const lokasiOptions = useMemo(
-    () => Array.from(new Set(allBarang.flatMap((b) => b.stokLokasi.map((sl) => sl.lokasi)))).sort(),
-    [allBarang]
+    () => lokasiList.filter((l) => l.status === "aktif").map((l) => l.nama),
+    [lokasiList]
   );
 
   const [alasan, setAlasan] = useState("");

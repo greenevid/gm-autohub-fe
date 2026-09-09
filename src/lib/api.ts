@@ -1,11 +1,13 @@
 import {
   Barang,
   CompanyProfile,
+  DiskonTipe,
   Invoice,
   Jasa,
   Karyawan,
   KaryawanStats,
   Kendaraan,
+  Lokasi,
   Lookup,
   LookupTipe,
   Mekanik,
@@ -176,6 +178,12 @@ export const api = {
     const query = qs.toString();
     return get<Posisi[]>(`/posisi${query ? `?${query}` : ""}`);
   },
+  lokasi: (params?: { search?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.search) qs.set("search", params.search);
+    const query = qs.toString();
+    return get<Lokasi[]>(`/lokasi${query ? `?${query}` : ""}`);
+  },
   karyawan: (params?: { search?: string; posisiId?: string; status?: string }) => {
     const qs = new URLSearchParams();
     if (params?.search) qs.set("search", params.search);
@@ -249,7 +257,9 @@ export const api = {
       tipe: "barang" | "jasa";
       itemId: string;
       qty: number;
+      diskonTipe?: DiskonTipe;
       diskonPersen: number;
+      diskonRp?: number;
       hargaSatuan?: number;
       lokasi?: string;
       satuan?: string;
@@ -287,6 +297,9 @@ export const api = {
   updatePosisi: (id: string, data: Partial<Omit<Posisi, "id" | "kode" | "createdAt">>) =>
     put<Posisi>(`/posisi/${id}`, data),
   deletePosisi: (id: string) => del<void>(`/posisi/${id}`),
+  createLokasi: (data: Omit<Lokasi, "id" | "createdAt">) => post<Lokasi>("/lokasi", data),
+  updateLokasi: (id: string, data: Partial<Omit<Lokasi, "id" | "createdAt">>) => put<Lokasi>(`/lokasi/${id}`, data),
+  deleteLokasi: (id: string) => del<void>(`/lokasi/${id}`),
   createKaryawan: (data: Omit<Karyawan, "id" | "kode" | "createdAt">) => post<Karyawan>("/karyawan", data),
   updateKaryawan: (id: string, data: Partial<Omit<Karyawan, "id" | "kode" | "createdAt">>) =>
     put<Karyawan>(`/karyawan/${id}`, data),
@@ -311,11 +324,21 @@ export const api = {
     potonganPersen?: number;
     biayaPengiriman?: number;
     biayaLainnya?: number;
+    bebasPpn?: boolean;
     metodePembayaran?: string;
     catatanPembayaran?: string;
     status?: Pembelian["status"];
     dibayar?: number;
-    items: { itemId: string; qty: number; diskonPersen: number; hargaSatuan?: number; lokasi?: string; satuan?: string }[];
+    items: {
+      itemId: string;
+      qty: number;
+      diskonTipe?: DiskonTipe;
+      diskonPersen: number;
+      diskonRp?: number;
+      hargaSatuan?: number;
+      lokasi?: string;
+      satuan?: string;
+    }[];
   }) => post<Pembelian>("/pembelian", data),
   getPembelian: (id: string) => get<Pembelian>(`/pembelian/${id}`),
   updatePembelian: (id: string, data: Partial<Pick<Pembelian, "status" | "dibayar">>) =>

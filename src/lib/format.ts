@@ -1,9 +1,31 @@
+import { DiskonTipe } from "./types";
+
 export function formatRupiah(value: number) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+export function formatNumberId(n: number) {
+  return n ? n.toLocaleString("id-ID") : "";
+}
+
+export function parseNumberId(s: string) {
+  return Number(s.replace(/\D/g, "")) || 0;
+}
+
+export function hitungTotalSetelahDiskon(
+  subtotalKotor: number,
+  diskonTipe: DiskonTipe | undefined,
+  diskonPersen: number,
+  diskonRp: number
+) {
+  if (diskonTipe === "rupiah") {
+    return Math.max(subtotalKotor - diskonRp, 0);
+  }
+  return subtotalKotor * (1 - diskonPersen / 100);
 }
 
 export function formatDate(iso: string) {

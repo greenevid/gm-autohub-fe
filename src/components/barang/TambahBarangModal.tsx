@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { api } from "@/lib/api";
 import { Barang, SATUAN_OPTIONS, Satuan, Supplier } from "@/lib/types";
 import { LookupSearchSelectField } from "@/components/ui/LookupSearchSelectField";
+import { RupiahInput } from "@/components/ui/RupiahInput";
 import { Select } from "@/components/ui/Select";
 
 const STEPS_CREATE = ["Informasi Umum", "Harga per Unit", "Stok Awal"] as const;
@@ -371,23 +372,19 @@ export function TambahBarangModal({ item, supplierList, onClose, onCreated }: Ta
                           </div>
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <Field label="Harga Beli" required>
-                              <input
+                              <RupiahInput
                                 required
-                                type="number"
-                                min={0}
                                 value={cfg.hargaBeli}
-                                onChange={(e) => updateUnitConfig(unit, { hargaBeli: e.target.value })}
+                                onChange={(v) => updateUnitConfig(unit, { hargaBeli: v })}
                                 placeholder="0"
                                 className={inputClass}
                               />
                             </Field>
                             <Field label="Harga Jual" required>
-                              <input
+                              <RupiahInput
                                 required
-                                type="number"
-                                min={0}
                                 value={cfg.hargaJual}
-                                onChange={(e) => updateUnitConfig(unit, { hargaJual: e.target.value })}
+                                onChange={(v) => updateUnitConfig(unit, { hargaJual: v })}
                                 placeholder="0"
                                 className={inputClass}
                               />

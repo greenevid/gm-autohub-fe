@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, FileText, Plus, Save, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { Barang } from "@/lib/types";
+import { Barang, Lokasi } from "@/lib/types";
 import { formatRupiah } from "@/lib/format";
 import { IdSearchSelectField } from "@/components/ui/IdSearchSelectField";
 import { Select } from "@/components/ui/Select";
@@ -26,9 +26,11 @@ const inputClass =
 export default function PengeluaranBarangBaruPage() {
   const router = useRouter();
   const [allBarang, setAllBarang] = useState<Barang[]>([]);
+  const [lokasiList, setLokasiList] = useState<Lokasi[]>([]);
 
   useEffect(() => {
     api.barang({ limit: 1000 }).then((res) => setAllBarang(res.data));
+    api.lokasi().then(setLokasiList);
   }, []);
 
   const [alasan, setAlasan] = useState("");
@@ -44,7 +46,7 @@ export default function PengeluaranBarangBaruPage() {
 
   const pickedBarang = allBarang.find((b) => b.id === pickItemId);
   const unitOptions = pickedBarang ? Array.from(new Set(pickedBarang.units.map((u) => u.satuan))) : [];
-  const lokasiOptions = pickedBarang ? Array.from(new Set(pickedBarang.stokLokasi.map((sl) => sl.lokasi))) : [];
+  const lokasiOptions = lokasiList.filter((l) => l.status === "aktif").map((l) => l.nama);
   const tersedia =
     pickedBarang?.stokLokasi.find((sl) => sl.lokasi === pickLokasi && sl.satuan === pickSatuan)?.jumlah ?? 0;
   const jumlahMelebihiStok = pickLokasi !== "" && (Number(pickJumlah) || 0) > tersedia;
@@ -192,7 +194,7 @@ export default function PengeluaranBarangBaruPage() {
               value={pickLokasi}
               onChange={setPickLokasi}
               disabled={!pickedBarang}
-              placeholder={pickedBarang && lokasiOptions.length === 0 ? "Tidak ada stok" : "Pilih lokasi..."}
+              placeholder={lokasiOptions.length === 0 ? "Belum ada data lokasi" : "Pilih lokasi..."}
               options={lokasiOptions.map((l) => ({ value: l, label: l }))}
             />
           </label>

@@ -5,6 +5,7 @@ import { FileText, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { Jasa } from "@/lib/types";
 import { LookupSearchSelectField } from "@/components/ui/LookupSearchSelectField";
+import { RupiahInput } from "@/components/ui/RupiahInput";
 
 interface TambahJasaModalProps {
   item?: Jasa;
@@ -166,12 +167,10 @@ export function TambahJasaModal({ item, onClose, onCreated }: TambahJasaModalPro
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
                       Rp
                     </span>
-                    <input
+                    <RupiahInput
                       required
-                      type="number"
-                      min={0}
                       value={harga}
-                      onChange={(e) => setHarga(e.target.value)}
+                      onChange={setHarga}
                       placeholder="0"
                       className={`${inputClass} pl-8`}
                     />

@@ -24,19 +24,24 @@ import {
   Truck,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { Barang, Lookup, PajakSetting, Supplier } from "@/lib/types";
-import { formatDate, formatRupiah } from "@/lib/format";
+import { Barang, DiskonTipe, Lokasi, Lookup, PajakSetting, Supplier } from "@/lib/types";
+import { formatDate, formatNumberId, formatRupiah, hitungTotalSetelahDiskon, parseNumberId } from "@/lib/format";
 import { Pagination } from "@/components/ui/Pagination";
 import { Select } from "@/components/ui/Select";
+import { DiskonItemInput } from "@/components/ui/DiskonItemInput";
 import { IdSearchSelectField } from "@/components/ui/IdSearchSelectField";
 import { LookupSearchSelectField } from "@/components/ui/LookupSearchSelectField";
+import { RupiahInput } from "@/components/ui/RupiahInput";
+import { DateInput } from "@/components/ui/DateInput";
 import { TambahSupplierModal } from "@/components/supplier/TambahSupplierModal";
 import { TambahBarangModal } from "@/components/barang/TambahBarangModal";
 
 interface WorkingItem {
   itemId: string;
   qty: number;
+  diskonTipe: DiskonTipe;
   diskonPersen: number;
+  diskonRp: number;
   hargaSatuan?: number;
   satuan?: string;
   lokasi?: string;
@@ -54,14 +59,6 @@ function roundToNearest(value: number, step: number) {
 
 function todayInputDate() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function formatNumberId(n: number) {
-  return n ? n.toLocaleString("id-ID") : "";
-}
-
-function parseNumberId(s: string) {
-  return Number(s.replace(/\D/g, "")) || 0;
 }
 
 function StepBar({ step }: { step: number }) {
@@ -95,15 +92,17 @@ export default function BuatInvoicePembelianPage() {
   const [supplierList, setSupplierList] = useState<Supplier[]>([]);
   const [pajakSetting, setPajakSetting] = useState<PajakSetting>({ aktif: false, persentase: 0, pembulatan: 0 });
   const [syaratPembayaranLookup, setSyaratPembayaranLookup] = useState<Lookup[]>([]);
+  const [lokasiList, setLokasiList] = useState<Lokasi[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([api.barang({ limit: 1000 }), api.supplier(), api.getPajak(), api.lookup("syarat-pembayaran")])
-      .then(([barangRes, supplierRes, pajakRes, syaratRes]) => {
+    Promise.all([api.barang({ limit: 1000 }), api.supplier(), api.getPajak(), api.lookup("syarat-pembayaran"), api.lokasi()])
+      .then(([barangRes, supplierRes, pajakRes, syaratRes, lokasiRes]) => {
         setAllBarang(barangRes.data);
         setSupplierList(supplierRes);
         setPajakSetting(pajakRes);
         setSyaratPembayaranLookup(syaratRes);
+        setLokasiList(lokasiRes);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Gagal memuat data"));
   }, []);
@@ -152,7 +151,9 @@ export default function BuatInvoicePembelianPage() {
         {
           itemId,
           qty: 0,
+          diskonTipe: "persen",
           diskonPersen: 0,
+          diskonRp: 0,
           hargaSatuan: barang?.hargaBeli ?? 0,
           satuan: barang?.units.find((u) => u.isDefault)?.satuan ?? barang?.units[0]?.satuan,
         },
@@ -197,10 +198,10 @@ export default function BuatInvoicePembelianPage() {
     return barang ? Array.from(new Set(barang.units.map((u) => u.satuan))) : [];
   }
 
-  function lokasiOptionsOf(item: WorkingItem): string[] {
-    const barang = barangById(item.itemId);
-    return barang ? Array.from(new Set(barang.stokLokasi.map((sl) => sl.lokasi))) : [];
-  }
+  const lokasiOptions = useMemo(
+    () => lokasiList.filter((l) => l.status === "aktif").map((l) => l.nama),
+    [lokasiList]
+  );
 
   function priceOf(item: WorkingItem) {
     return item.hargaSatuan ?? 0;
@@ -209,7 +210,12 @@ export default function BuatInvoicePembelianPage() {
   const selectedCount = workingItems.length;
 
   const subtotal = useMemo(
-    () => workingItems.reduce((sum, item) => sum + priceOf(item) * item.qty * (1 - item.diskonPersen / 100), 0),
+    () =>
+      workingItems.reduce(
+        (sum, item) =>
+          sum + hitungTotalSetelahDiskon(priceOf(item) * item.qty, item.diskonTipe, item.diskonPersen, item.diskonRp),
+        0
+      ),
     [workingItems]
   );
 
@@ -223,6 +229,7 @@ export default function BuatInvoicePembelianPage() {
   const [potonganPersen, setPotonganPersen] = useState("");
   const [biayaPengiriman, setBiayaPengiriman] = useState("");
   const [biayaLainnya, setBiayaLainnya] = useState("");
+  const [bebasPpn, setBebasPpn] = useState(false);
   const [catatan, setCatatan] = useState("");
   const [bayarLunas, setBayarLunas] = useState(false);
   const [paymentSectionOpen, setPaymentSectionOpen] = useState(false);
@@ -247,7 +254,7 @@ export default function BuatInvoicePembelianPage() {
   const ongkir = Number(biayaPengiriman) || 0;
   const lainnya = Number(biayaLainnya) || 0;
   const dpp = subtotal * (1 - potongan / 100);
-  const pajakPersenEfektif = pajakSetting.aktif ? pajakSetting.persentase : 0;
+  const pajakPersenEfektif = !bebasPpn && pajakSetting.aktif ? pajakSetting.persentase : 0;
   const pajakNominal = roundToNearest(dpp * (pajakPersenEfektif / 100), pajakSetting.pembulatan);
   const totalInvoice = dpp + pajakNominal + ongkir + lainnya;
 
@@ -299,14 +306,17 @@ export default function BuatInvoicePembelianPage() {
         potonganPersen: potongan || undefined,
         biayaPengiriman: ongkir || undefined,
         biayaLainnya: lainnya || undefined,
+        bebasPpn,
         metodePembayaran: paymentMethods.map((p) => p.metode).join(", ") || undefined,
         catatanPembayaran: catatanPembayaran || undefined,
         status,
         dibayar: totalDibayar,
-        items: workingItems.map(({ itemId, qty, diskonPersen, hargaSatuan, lokasi, satuan }) => ({
+        items: workingItems.map(({ itemId, qty, diskonTipe, diskonPersen, diskonRp, hargaSatuan, lokasi, satuan }) => ({
           itemId,
           qty,
+          diskonTipe,
           diskonPersen,
+          diskonRp,
           hargaSatuan,
           lokasi,
           satuan,
@@ -325,9 +335,8 @@ export default function BuatInvoicePembelianPage() {
 
   function renderItemRow(item: WorkingItem, index: number) {
     const units = unitOptionsOf(item);
-    const lokasiOptions = lokasiOptionsOf(item);
     const price = priceOf(item);
-    const rowTotal = price * item.qty * (1 - item.diskonPersen / 100);
+    const rowTotal = hitungTotalSetelahDiskon(price * item.qty, item.diskonTipe, item.diskonPersen, item.diskonRp);
     return (
       <div key={`${item.itemId}-${index}`} className="rounded-lg border border-zinc-200 p-3">
         <div className="flex items-start justify-between gap-2">
@@ -391,18 +400,12 @@ export default function BuatInvoicePembelianPage() {
           </div>
           <div>
             <label className="mb-1 block text-xs text-zinc-500">Diskon Item</label>
-            <div className="relative">
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={item.diskonPersen || ""}
-                onChange={(e) => updateWorkingItem(item, { diskonPersen: Number(e.target.value) || 0 })}
-                placeholder="Masukkan %"
-                className="w-full rounded-lg border border-zinc-200 py-1.5 pl-2 pr-6 text-right text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              />
-              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">%</span>
-            </div>
+            <DiskonItemInput
+              tipe={item.diskonTipe}
+              persen={item.diskonPersen}
+              rupiah={item.diskonRp}
+              onChange={(patch) => updateWorkingItem(item, patch)}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs text-zinc-500">Qty</label>
@@ -603,8 +606,12 @@ export default function BuatInvoicePembelianPage() {
                 <Percent className="h-4 w-4" />
               </span>
               <div>
-                <p className="text-sm font-semibold">Invoice Dikenakan Pajak</p>
-                <p className="text-xs text-green-100">Pajak {pajakSetting.persentase}% akan diterapkan pada invoice ini</p>
+                <p className="text-sm font-semibold">{bebasPpn ? "Invoice Bebas Pajak" : "Invoice Dikenakan Pajak"}</p>
+                <p className="text-xs text-green-100">
+                  {bebasPpn
+                    ? "PPN tidak diterapkan pada invoice ini (diatur di Pengaturan Tambahan)"
+                    : `Pajak ${pajakSetting.persentase}% akan diterapkan pada invoice ini`}
+                </p>
               </div>
             </div>
           )}
@@ -677,12 +684,7 @@ export default function BuatInvoicePembelianPage() {
               </p>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">Tanggal Invoice</span>
-                <input
-                  type="date"
-                  value={tanggalInvoice}
-                  onChange={(e) => setTanggalInvoice(e.target.value)}
-                  className={inputClass}
-                />
+                <DateInput value={tanggalInvoice} onChange={setTanggalInvoice} />
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">No. Invoice Supplier</span>
@@ -713,18 +715,13 @@ export default function BuatInvoicePembelianPage() {
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">Tanggal Jatuh Tempo</span>
-                <input
-                  type="date"
-                  value={tanggalJatuhTempo}
-                  onChange={(e) => setTanggalJatuhTempo(e.target.value)}
-                  className={inputClass}
-                />
+                <DateInput value={tanggalJatuhTempo} onChange={setTanggalJatuhTempo} />
               </label>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-zinc-200">
-            <div className="flex items-center justify-between bg-green-600 px-4 py-3 text-white">
+          <div className="rounded-xl border border-zinc-200">
+            <div className="flex items-center justify-between rounded-t-xl bg-green-600 px-4 py-3 text-white">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <Package className="h-4 w-4" /> Daftar Barang ({workingItems.length})
               </p>
@@ -736,7 +733,7 @@ export default function BuatInvoicePembelianPage() {
                 <Plus className="h-3.5 w-3.5" /> Tambah Barang
               </button>
             </div>
-            <div className="space-y-2 bg-white p-3">
+            <div className="space-y-2 rounded-b-xl bg-white p-3">
               {workingItems.length === 0 ? (
                 <p className="py-6 text-center text-sm text-zinc-400">Belum ada barang dipilih</p>
               ) : (
@@ -766,28 +763,36 @@ export default function BuatInvoicePembelianPage() {
                 </div>
               </label>
 
+              {pajakSetting.aktif && (
+                <label className="flex items-center gap-2 border-t border-zinc-100 pt-3 text-sm font-medium text-zinc-700">
+                  <input
+                    type="checkbox"
+                    checked={bebasPpn}
+                    onChange={(e) => setBebasPpn(e.target.checked)}
+                    className="h-4 w-4 rounded border-zinc-300 text-green-600 focus:ring-green-500"
+                  />
+                  Bebas PPN untuk invoice ini
+                </label>
+              )}
+
               <div className="grid grid-cols-1 gap-4 border-t border-zinc-100 pt-3 sm:grid-cols-2">
                 <label className="block">
                   <span className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-zinc-700">
                     <Truck className="h-3.5 w-3.5" /> Biaya Pengiriman (Rp)
                   </span>
-                  <input
-                    type="number"
-                    min={0}
+                  <RupiahInput
                     value={biayaPengiriman}
-                    onChange={(e) => setBiayaPengiriman(e.target.value)}
-                    placeholder="Contoh: 50000"
+                    onChange={setBiayaPengiriman}
+                    placeholder="Contoh: 50.000"
                     className={inputClass}
                   />
                 </label>
                 <label className="block">
                   <span className="mb-1.5 block text-sm font-medium text-zinc-700">Biaya Lainnya (Rp)</span>
-                  <input
-                    type="number"
-                    min={0}
+                  <RupiahInput
                     value={biayaLainnya}
-                    onChange={(e) => setBiayaLainnya(e.target.value)}
-                    placeholder="Contoh: 25000"
+                    onChange={setBiayaLainnya}
+                    placeholder="Contoh: 25.000"
                     className={inputClass}
                   />
                 </label>
@@ -820,7 +825,7 @@ export default function BuatInvoicePembelianPage() {
                 <span>{formatRupiah(dpp)}</span>
               </div>
               <div className="flex items-center justify-between text-sm text-green-50">
-                <span>Pajak ({pajakPersenEfektif}%):</span>
+                <span>{bebasPpn ? "Pajak (Bebas PPN)" : `Pajak (${pajakPersenEfektif}%)`}:</span>
                 <span>+{formatRupiah(pajakNominal)}</span>
               </div>
               <div className="flex items-center justify-between text-sm text-green-50">
@@ -981,7 +986,15 @@ export default function BuatInvoicePembelianPage() {
                 <tbody>
                   {workingItems.map((item, i) => {
                     const price = priceOf(item);
-                    const rowTotal = price * item.qty * (1 - item.diskonPersen / 100);
+                    const rowTotal = hitungTotalSetelahDiskon(price * item.qty, item.diskonTipe, item.diskonPersen, item.diskonRp);
+                    const diskonLabel =
+                      item.diskonTipe === "rupiah"
+                        ? item.diskonRp > 0
+                          ? formatRupiah(item.diskonRp)
+                          : "-"
+                        : item.diskonPersen > 0
+                          ? `${item.diskonPersen}%`
+                          : "-";
                     return (
                       <tr key={`${item.itemId}-${i}`} className="border-b border-zinc-50 last:border-0">
                         <td className="px-4 py-3 text-zinc-900">{nameOf(item)}</td>
@@ -989,9 +1002,7 @@ export default function BuatInvoicePembelianPage() {
                         <td className="px-4 py-3 text-zinc-700">{item.lokasi ?? "-"}</td>
                         <td className="px-4 py-3 text-right text-zinc-700">{formatRupiah(price)}</td>
                         <td className="px-4 py-3 text-right text-zinc-700">{item.qty}</td>
-                        <td className="px-4 py-3 text-right text-zinc-700">
-                          {item.diskonPersen > 0 ? `${item.diskonPersen}%` : "-"}
-                        </td>
+                        <td className="px-4 py-3 text-right text-zinc-700">{diskonLabel}</td>
                         <td className="px-4 py-3 text-right font-semibold text-emerald-600">{formatRupiah(rowTotal)}</td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
@@ -1036,7 +1047,7 @@ export default function BuatInvoicePembelianPage() {
               <span>{formatRupiah(dpp)}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-green-50">
-              <span>Pajak (PPN) {pajakPersenEfektif}%</span>
+              <span>{bebasPpn ? "Pajak (Bebas PPN)" : `Pajak (PPN) ${pajakPersenEfektif}%`}</span>
               <span>+{formatRupiah(pajakNominal)}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-green-50">
@@ -1113,11 +1124,9 @@ export default function BuatInvoicePembelianPage() {
                             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
                               Rp
                             </span>
-                            <input
-                              type="number"
-                              min={0}
+                            <RupiahInput
                               value={pm.jumlah}
-                              onChange={(e) => updatePaymentMethod(i, { jumlah: e.target.value })}
+                              onChange={(v) => updatePaymentMethod(i, { jumlah: v })}
                               placeholder="0"
                               className={`${inputClass} pl-8`}
                             />

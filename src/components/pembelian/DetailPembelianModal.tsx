@@ -115,7 +115,7 @@ export function DetailPembelianModal({ pembelianId, ids, supplierList, onClose, 
 
   function handlePrint() {
     setDokumenOpen(false);
-    window.print();
+    window.open(`/pembelian/faktur/${pembelianId}/cetak`, "_blank");
   }
 
   return (

@@ -9,6 +9,7 @@ import { daysBetween, formatDateLong, formatRupiah } from "@/lib/format";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/Panel";
 import { Pagination, paginate } from "@/components/ui/Pagination";
+import { RupiahInput } from "@/components/ui/RupiahInput";
 
 type MainTab = "daftar" | "riwayat";
 type SubTab = "semua" | "jatuh_tempo" | "akan_jatuh_tempo";
@@ -410,13 +411,10 @@ export default function HutangPage() {
                                           <td colSpan={9} className="px-3 py-2.5">
                                             <div className="flex flex-wrap items-center gap-2">
                                               <span className="text-xs text-zinc-500">Jumlah bayar (sisa {formatRupiah(sisa)}):</span>
-                                              <input
-                                                type="number"
-                                                min={0}
-                                                max={sisa}
+                                              <RupiahInput
                                                 value={payAmount[p.id] ?? ""}
-                                                onChange={(e) =>
-                                                  setPayAmount((prev) => ({ ...prev, [p.id]: e.target.value }))
+                                                onChange={(v) =>
+                                                  setPayAmount((prev) => ({ ...prev, [p.id]: v }))
                                                 }
                                                 placeholder="Jumlah bayar"
                                                 className="w-36 rounded-lg border border-zinc-200 px-2 py-1.5 text-sm"

@@ -4,6 +4,8 @@ import { FormEvent, useState } from "react";
 import { X } from "lucide-react";
 import { api } from "@/lib/api";
 import { PengeluaranLain } from "@/lib/types";
+import { RupiahInput } from "@/components/ui/RupiahInput";
+import { DateInput } from "@/components/ui/DateInput";
 
 interface TambahPengeluaranLainModalProps {
   onClose: () => void;
@@ -83,12 +85,7 @@ export function TambahPengeluaranLainModal({ onClose, onCreated }: TambahPengelu
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">Tanggal</span>
-                <input
-                  type="date"
-                  value={tanggal}
-                  onChange={(e) => setTanggal(e.target.value)}
-                  className={inputClass}
-                />
+                <DateInput value={tanggal} onChange={setTanggal} />
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">
@@ -98,12 +95,10 @@ export function TambahPengeluaranLainModal({ onClose, onCreated }: TambahPengelu
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
                     Rp
                   </span>
-                  <input
+                  <RupiahInput
                     required
-                    type="number"
-                    min={0}
                     value={jumlah}
-                    onChange={(e) => setJumlah(e.target.value)}
+                    onChange={setJumlah}
                     placeholder="0"
                     className={`${inputClass} pl-8`}
                   />

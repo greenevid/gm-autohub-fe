@@ -4,6 +4,8 @@ import { FormEvent, useState } from "react";
 import { X } from "lucide-react";
 import { api } from "@/lib/api";
 import { Karyawan, Posisi, SATUAN_GAJI_OPTIONS, SatuanGaji, StatusKaryawan } from "@/lib/types";
+import { RupiahInput } from "@/components/ui/RupiahInput";
+import { DateInput } from "@/components/ui/DateInput";
 import { SearchSelectField } from "@/components/ui/SearchSelectField";
 import { Select } from "@/components/ui/Select";
 import { TambahPosisiModal } from "@/components/karyawan/TambahPosisiModal";
@@ -145,13 +147,7 @@ export function TambahKaryawanModal({
                   />
                 </Field>
                 <Field label="Tanggal Masuk" required>
-                  <input
-                    required
-                    type="date"
-                    value={tanggalMasuk}
-                    onChange={(e) => setTanggalMasuk(e.target.value)}
-                    className={inputClass}
-                  />
+                  <DateInput value={tanggalMasuk} onChange={setTanggalMasuk} />
                 </Field>
               </div>
             </div>
@@ -171,12 +167,10 @@ export function TambahKaryawanModal({
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
                       Rp
                     </span>
-                    <input
+                    <RupiahInput
                       required
-                      type="number"
-                      min={0}
                       value={gaji}
-                      onChange={(e) => setGaji(e.target.value)}
+                      onChange={setGaji}
                       className={`${inputClass} pl-9`}
                     />
                   </div>

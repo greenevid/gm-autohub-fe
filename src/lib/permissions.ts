@@ -40,6 +40,7 @@ export function canAccess(role: UserRole, module: ModuleKey): boolean {
 
 const ROUTE_MODULES: { prefix: string; module: ModuleKey }[] = [
   { prefix: "/manajemen-user", module: "manajemen-user" },
+  { prefix: "/lokasi", module: "pengaturan" },
   { prefix: "/pengaturan", module: "pengaturan" },
   { prefix: "/laporan", module: "laporan" },
   { prefix: "/manajemen-karyawan", module: "manajemen-karyawan" },

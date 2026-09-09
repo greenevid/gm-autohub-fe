@@ -8,6 +8,7 @@ import { Invoice, Pelanggan, Retur, StatusRetur } from "@/lib/types";
 import { formatDateLong, formatRupiah } from "@/lib/format";
 import { Pagination, paginate } from "@/components/ui/Pagination";
 import { LookupSearchSelectField } from "@/components/ui/LookupSearchSelectField";
+import { RupiahInput } from "@/components/ui/RupiahInput";
 
 interface BuatReturWizardProps {
   invoiceList: Invoice[];
@@ -318,11 +319,9 @@ export function BuatReturWizard({ invoiceList, pelangganList, onClose, onCreated
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">Potongan (Rp)</span>
-                <input
-                  type="number"
-                  min={0}
+                <RupiahInput
                   value={potonganRp}
-                  onChange={(e) => setPotonganRp(e.target.value)}
+                  onChange={setPotonganRp}
                   placeholder="0"
                   className={inputClass}
                 />

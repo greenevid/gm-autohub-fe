@@ -13,7 +13,8 @@ import {
   TIPE_GAJI_FILTER_OPTIONS,
   TipeGajiFilter,
 } from "@/lib/types";
-import { formatDateFull, formatRupiah } from "@/lib/format";
+import { formatDateFull, formatNumberId, formatRupiah, parseNumberId } from "@/lib/format";
+import { DateInput } from "@/components/ui/DateInput";
 
 interface BuatPeriodeGajiModalProps {
   karyawanList: Karyawan[];
@@ -143,23 +144,19 @@ export function BuatPeriodeGajiModal({ karyawanList, posisiList, onClose, onSave
           <label className="mt-4 block">
             <span className="mb-1.5 block text-sm font-medium text-zinc-700">Rentang Tanggal</span>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <input
-                type="date"
+              <DateInput
                 value={tanggalMulai}
-                onChange={(e) => {
-                  setTanggalMulai(e.target.value);
+                onChange={(v) => {
+                  setTanggalMulai(v);
                   setRows(null);
                 }}
-                className={inputClass}
               />
-              <input
-                type="date"
+              <DateInput
                 value={tanggalSelesai}
-                onChange={(e) => {
-                  setTanggalSelesai(e.target.value);
+                onChange={(v) => {
+                  setTanggalSelesai(v);
                   setRows(null);
                 }}
-                className={inputClass}
               />
             </div>
           </label>
@@ -269,19 +266,19 @@ export function BuatPeriodeGajiModal({ karyawanList, posisiList, onClose, onSave
                       <td className="py-3 pr-4 text-right text-zinc-700">{row.gajiPokok.toLocaleString("id-ID")}</td>
                       <td className="py-3 pr-4 text-right">
                         <input
-                          type="number"
-                          min={0}
-                          value={row.komisi}
-                          onChange={(e) => updateRow(index, { komisi: Number(e.target.value) || 0 })}
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumberId(row.komisi)}
+                          onChange={(e) => updateRow(index, { komisi: parseNumberId(e.target.value) })}
                           className="w-24 rounded border border-zinc-200 px-2 py-1 text-right text-sm"
                         />
                       </td>
                       <td className="py-3 pr-4 text-right">
                         <input
-                          type="number"
-                          min={0}
-                          value={row.potongan}
-                          onChange={(e) => updateRow(index, { potongan: Number(e.target.value) || 0 })}
+                          type="text"
+                          inputMode="numeric"
+                          value={formatNumberId(row.potongan)}
+                          onChange={(e) => updateRow(index, { potongan: parseNumberId(e.target.value) })}
                           className="w-24 rounded border border-zinc-200 px-2 py-1 text-right text-sm"
                         />
                       </td>

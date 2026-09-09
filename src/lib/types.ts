@@ -1,3 +1,5 @@
+export type DiskonTipe = "persen" | "rupiah";
+
 export type StatusPelanggan = "aktif" | "nonaktif";
 
 export interface Pelanggan {
@@ -190,7 +192,9 @@ export interface InvoiceItem {
   satuan?: string;
   qty: number;
   hargaSatuan: number;
+  diskonTipe?: DiskonTipe;
   diskonPersen: number;
+  diskonRp?: number;
   lokasi?: string;
 }
 
@@ -275,7 +279,9 @@ export interface PembelianItem {
   satuan?: string;
   qty: number;
   hargaSatuan: number;
+  diskonTipe?: DiskonTipe;
   diskonPersen: number;
+  diskonRp?: number;
   lokasi?: string;
 }
 
@@ -294,6 +300,7 @@ export interface Pembelian {
   potonganPersen?: number;
   subtotal?: number;
   dpp?: number;
+  bebasPpn?: boolean;
   pajakPersen?: number;
   pajak?: number;
   biayaPengiriman?: number;
@@ -470,6 +477,26 @@ export interface Posisi {
   deskripsi?: string;
   aktif: boolean;
   dapatDitugaskanServis: boolean;
+  createdAt: string;
+}
+
+export type TipeLokasi = "toko" | "gudang" | "cabang";
+export type StatusLokasi = "aktif" | "nonaktif";
+
+export const TIPE_LOKASI_OPTIONS: { value: TipeLokasi; label: string }[] = [
+  { value: "toko", label: "Toko" },
+  { value: "gudang", label: "Gudang" },
+  { value: "cabang", label: "Cabang" },
+];
+
+export interface Lokasi {
+  id: string;
+  nama: string;
+  tipe: TipeLokasi;
+  alamat: string;
+  kota: string;
+  telepon: string;
+  status: StatusLokasi;
   createdAt: string;
 }
 

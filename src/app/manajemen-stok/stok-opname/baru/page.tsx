@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { ArrowLeft, ClipboardList, Save, Search } from "lucide-react";
 import { api } from "@/lib/api";
-import { Barang } from "@/lib/types";
+import { Barang, Lokasi } from "@/lib/types";
 import { Select } from "@/components/ui/Select";
+import { DateInput } from "@/components/ui/DateInput";
 
 interface OpnameRow {
   itemId: string;
@@ -27,6 +28,7 @@ function todayInputDate() {
 export default function StokOpnameBaruPage() {
   const router = useRouter();
   const [allBarang, setAllBarang] = useState<Barang[]>([]);
+  const [lokasiList, setLokasiList] = useState<Lokasi[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,11 +36,12 @@ export default function StokOpnameBaruPage() {
       .barang({ limit: 1000 })
       .then((res) => setAllBarang(res.data))
       .finally(() => setLoading(false));
+    api.lokasi().then(setLokasiList);
   }, []);
 
   const lokasiOptions = useMemo(
-    () => Array.from(new Set(allBarang.flatMap((b) => b.stokLokasi.map((sl) => sl.lokasi)))).sort(),
-    [allBarang]
+    () => lokasiList.filter((l) => l.status === "aktif").map((l) => l.nama),
+    [lokasiList]
   );
 
   const [lokasi, setLokasi] = useState("");
@@ -137,13 +140,13 @@ export default function StokOpnameBaruPage() {
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-medium text-zinc-700">Tanggal Opname</span>
-          <input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} className={inputClass} />
+          <DateInput value={tanggal} onChange={setTanggal} />
         </label>
       </div>
 
       {!loading && lokasiOptions.length === 0 && (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-600">
-          Belum ada data lokasi stok. Tambahkan stok lokasi pada barang lewat menu Barang & Jasa terlebih dahulu.
+          Belum ada data lokasi. Tambahkan lokasi terlebih dahulu lewat menu Lokasi.
         </p>
       )}
 

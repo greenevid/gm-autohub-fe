@@ -157,9 +157,14 @@ function A4Document({
       </div>
 
       <div className="relative flex items-start justify-between gap-4">
-        <div>
-          <p className="text-2xl font-bold leading-tight text-zinc-900">{profile.namaPerusahaan}</p>
-          <p className="text-xs text-zinc-500">{profile.alamat}</p>
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-gmi.png" alt="Logo" className="h-14 w-14 object-contain" />
+          <div>
+            <p className="text-2xl font-bold leading-none text-zinc-900">{profile.namaPerusahaan}</p>
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-green-700">INDONESIA</p>
+            <p className="mt-1 text-xs text-zinc-500">{profile.alamat}</p>
+          </div>
         </div>
       </div>
 
@@ -312,8 +317,11 @@ function DotMatrixDocument({
 
   return (
     <div className="mx-auto w-[100mm] bg-white p-3 font-mono text-[10px] leading-tight text-black shadow-lg print:w-auto print:shadow-none">
-      <div className="text-center">
+      <div className="flex flex-col items-center text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo-gmi.png" alt="Logo" className="mb-1 h-10 w-10 object-contain" />
         <p className="font-bold">{profile.namaPerusahaan}</p>
+        <p className="tracking-widest">INDONESIA</p>
         <p>{profile.alamat}</p>
         <p>
           {profile.telepon} {profile.email ? `/ ${profile.email}` : ""}

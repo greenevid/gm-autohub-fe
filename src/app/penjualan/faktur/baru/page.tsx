@@ -23,13 +23,16 @@ import {
   Wrench,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { Barang, Jasa, Kendaraan, Lookup, PajakSetting, Paket, Pelanggan } from "@/lib/types";
-import { formatDate, formatRupiah } from "@/lib/format";
+import { Barang, DiskonTipe, Jasa, Kendaraan, Lokasi, Lookup, PajakSetting, Paket, Pelanggan } from "@/lib/types";
+import { formatDate, formatNumberId, formatRupiah, hitungTotalSetelahDiskon, parseNumberId } from "@/lib/format";
 import { Pagination } from "@/components/ui/Pagination";
 import { Select } from "@/components/ui/Select";
 import { type PickableItem } from "@/components/barang/ItemPickerSection";
+import { DiskonItemInput } from "@/components/ui/DiskonItemInput";
 import { IdSearchSelectField } from "@/components/ui/IdSearchSelectField";
 import { LookupSearchSelectField } from "@/components/ui/LookupSearchSelectField";
+import { RupiahInput } from "@/components/ui/RupiahInput";
+import { DateInput } from "@/components/ui/DateInput";
 import { TambahPelangganModal } from "@/components/pelanggan/TambahPelangganModal";
 
 type CatalogTab = "barang" | "jasa" | "paket";
@@ -39,6 +42,8 @@ interface WorkingItem extends PickableItem {
   fromPaketId?: string;
   hargaSatuan?: number;
   lokasi?: string;
+  diskonTipe: DiskonTipe;
+  diskonRp: number;
 }
 
 const STEPS = ["Pilih Item", "Detail Invoice", "Review & Simpan"];
@@ -95,6 +100,7 @@ export default function BuatInvoicePenjualanPage() {
   const [kendaraanList, setKendaraanList] = useState<Kendaraan[]>([]);
   const [pajakSetting, setPajakSetting] = useState<PajakSetting>({ aktif: false, persentase: 0, pembulatan: 0 });
   const [syaratPembayaranLookup, setSyaratPembayaranLookup] = useState<Lookup[]>([]);
+  const [lokasiList, setLokasiList] = useState<Lokasi[]>([]);
 
   useEffect(() => {
     Promise.all([
@@ -105,7 +111,8 @@ export default function BuatInvoicePenjualanPage() {
       api.kendaraan(),
       api.getPajak(),
       api.lookup("syarat-pembayaran"),
-    ]).then(([barangRes, jasaRes, paketRes, pelangganRes, kendaraanRes, pajakRes, syaratRes]) => {
+      api.lokasi(),
+    ]).then(([barangRes, jasaRes, paketRes, pelangganRes, kendaraanRes, pajakRes, syaratRes, lokasiRes]) => {
       setAllBarang(barangRes.data);
       setAllJasa(jasaRes.data);
       setTabTotals({ barang: barangRes.total, jasa: jasaRes.total, paket: paketRes.total });
@@ -113,6 +120,7 @@ export default function BuatInvoicePenjualanPage() {
       setKendaraanList(kendaraanRes);
       setPajakSetting(pajakRes);
       setSyaratPembayaranLookup(syaratRes);
+      setLokasiList(lokasiRes);
     });
   }, []);
 
@@ -188,7 +196,9 @@ export default function BuatInvoicePenjualanPage() {
           tipe,
           itemId,
           qty: 1,
+          diskonTipe: "persen",
           diskonPersen: 0,
+          diskonRp: 0,
           hargaSatuan: catalogPriceOf(tipe, itemId),
           satuan: catalogUnitOf(tipe, itemId),
         },
@@ -215,7 +225,9 @@ export default function BuatInvoicePenjualanPage() {
           tipe: pi.tipe,
           itemId: pi.itemId,
           qty: pi.qty,
+          diskonTipe: "persen" as const,
           diskonPersen: pi.diskonPersen,
+          diskonRp: 0,
           fromPaketId: paket.id,
           hargaSatuan: catalogPriceOf(pi.tipe, pi.itemId),
           satuan: catalogUnitOf(pi.tipe, pi.itemId),
@@ -279,8 +291,7 @@ export default function BuatInvoicePenjualanPage() {
 
   function lokasiOptionsOf(item: WorkingItem): string[] {
     if (item.tipe !== "barang") return [];
-    const barang = allBarang.find((b) => b.id === item.itemId);
-    return barang ? Array.from(new Set(barang.stokLokasi.map((sl) => sl.lokasi))) : [];
+    return lokasiList.filter((l) => l.status === "aktif").map((l) => l.nama);
   }
 
   function priceOf(item: WorkingItem) {
@@ -291,7 +302,12 @@ export default function BuatInvoicePenjualanPage() {
   const jasaWorkingItems = workingItems.filter((i) => i.tipe === "jasa");
 
   const subtotal = useMemo(
-    () => workingItems.reduce((sum, item) => sum + priceOf(item) * item.qty * (1 - item.diskonPersen / 100), 0),
+    () =>
+      workingItems.reduce(
+        (sum, item) =>
+          sum + hitungTotalSetelahDiskon(priceOf(item) * item.qty, item.diskonTipe, item.diskonPersen, item.diskonRp),
+        0
+      ),
     [workingItems]
   );
 
@@ -368,11 +384,13 @@ export default function BuatInvoicePenjualanPage() {
         kilometer: Number(kilometer) || undefined,
         potonganPersen: potongan || undefined,
         dibayar: Number(dibayar) || 0,
-        items: workingItems.map(({ tipe, itemId, qty, diskonPersen, hargaSatuan, lokasi, satuan }) => ({
+        items: workingItems.map(({ tipe, itemId, qty, diskonTipe, diskonPersen, diskonRp, hargaSatuan, lokasi, satuan }) => ({
           tipe,
           itemId,
           qty,
+          diskonTipe,
           diskonPersen,
+          diskonRp,
           hargaSatuan,
           lokasi,
           satuan,
@@ -393,7 +411,7 @@ export default function BuatInvoicePenjualanPage() {
     const units = unitOptionsOf(item);
     const lokasiOptions = lokasiOptionsOf(item);
     const price = priceOf(item);
-    const rowTotal = price * item.qty * (1 - item.diskonPersen / 100);
+    const rowTotal = hitungTotalSetelahDiskon(price * item.qty, item.diskonTipe, item.diskonPersen, item.diskonRp);
     return (
       <div key={`${item.tipe}-${item.itemId}-${index}`} className="rounded-lg border border-zinc-200 p-3">
         <div className="flex items-start justify-between gap-2">
@@ -454,26 +472,21 @@ export default function BuatInvoicePenjualanPage() {
           <div>
             <label className="mb-1 block text-xs text-zinc-500">Harga</label>
             <input
-              type="number"
-              min={0}
-              value={item.hargaSatuan ?? 0}
-              onChange={(e) => updateWorkingItem(item, { hargaSatuan: Number(e.target.value) || 0 })}
+              type="text"
+              inputMode="numeric"
+              value={formatNumberId(item.hargaSatuan ?? 0)}
+              onChange={(e) => updateWorkingItem(item, { hargaSatuan: parseNumberId(e.target.value) })}
               className="w-full rounded-lg border border-zinc-200 px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             />
           </div>
           <div>
             <label className="mb-1 block text-xs text-zinc-500">Diskon Item</label>
-            <div className="relative">
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={item.diskonPersen}
-                onChange={(e) => updateWorkingItem(item, { diskonPersen: Number(e.target.value) || 0 })}
-                className="w-full rounded-lg border border-zinc-200 py-1.5 pl-2 pr-6 text-right text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-              />
-              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">%</span>
-            </div>
+            <DiskonItemInput
+              tipe={item.diskonTipe}
+              persen={item.diskonPersen}
+              rupiah={item.diskonRp}
+              onChange={(patch) => updateWorkingItem(item, patch)}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs text-zinc-500">Jumlah</label>
@@ -836,12 +849,7 @@ export default function BuatInvoicePenjualanPage() {
               </p>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">Tanggal Invoice</span>
-                <input
-                  type="date"
-                  value={tanggalInvoice}
-                  onChange={(e) => setTanggalInvoice(e.target.value)}
-                  className={inputClass}
-                />
+                <DateInput value={tanggalInvoice} onChange={setTanggalInvoice} />
               </label>
 
               <p className="flex items-center gap-2 border-t border-zinc-100 pt-3 text-sm font-semibold text-zinc-900">
@@ -863,18 +871,13 @@ export default function BuatInvoicePenjualanPage() {
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-medium text-zinc-700">Tanggal Jatuh Tempo</span>
-                <input
-                  type="date"
-                  value={tanggalJatuhTempo}
-                  onChange={(e) => setTanggalJatuhTempo(e.target.value)}
-                  className={inputClass}
-                />
+                <DateInput value={tanggalJatuhTempo} onChange={setTanggalJatuhTempo} />
               </label>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-zinc-200">
-            <div className="flex items-center justify-between bg-green-600 px-4 py-3 text-white">
+          <div className="rounded-xl border border-zinc-200">
+            <div className="flex items-center justify-between rounded-t-xl bg-green-600 px-4 py-3 text-white">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <Package className="h-4 w-4" /> Daftar Barang ({barangWorkingItems.length})
               </p>
@@ -889,7 +892,7 @@ export default function BuatInvoicePenjualanPage() {
                 <Plus className="h-3.5 w-3.5" /> Tambah Barang
               </button>
             </div>
-            <div className="space-y-2 bg-white p-3">
+            <div className="space-y-2 rounded-b-xl bg-white p-3">
               {barangWorkingItems.length === 0 ? (
                 <p className="py-6 text-center text-sm text-zinc-400">Belum ada barang dipilih</p>
               ) : (
@@ -898,8 +901,8 @@ export default function BuatInvoicePenjualanPage() {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-zinc-200">
-            <div className="flex items-center justify-between bg-green-600 px-4 py-3 text-white">
+          <div className="rounded-xl border border-zinc-200">
+            <div className="flex items-center justify-between rounded-t-xl bg-green-600 px-4 py-3 text-white">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <Wrench className="h-4 w-4" /> Daftar Jasa ({jasaWorkingItems.length})
               </p>
@@ -914,7 +917,7 @@ export default function BuatInvoicePenjualanPage() {
                 <Plus className="h-3.5 w-3.5" /> Tambah Jasa
               </button>
             </div>
-            <div className="space-y-2 bg-white p-3">
+            <div className="space-y-2 rounded-b-xl bg-white p-3">
               {jasaWorkingItems.length === 0 ? (
                 <p className="py-6 text-center text-sm text-zinc-400">Belum ada jasa dipilih</p>
               ) : (
@@ -1061,13 +1064,19 @@ export default function BuatInvoicePenjualanPage() {
               <tbody>
                 {workingItems.map((item, i) => {
                   const price = priceOf(item);
-                  const rowSubtotal = price * item.qty * (1 - item.diskonPersen / 100);
+                  const rowSubtotal = hitungTotalSetelahDiskon(price * item.qty, item.diskonTipe, item.diskonPersen, item.diskonRp);
+                  const diskonLabel =
+                    item.diskonTipe === "rupiah"
+                      ? item.diskonRp > 0
+                        ? formatRupiah(item.diskonRp)
+                        : "-"
+                      : `${item.diskonPersen}%`;
                   return (
                     <tr key={`${item.tipe}-${item.itemId}-${i}`} className="border-b border-zinc-50 last:border-0">
                       <td className="py-3 pr-4 text-zinc-900">{nameOf(item)}</td>
                       <td className="py-3 pr-4 text-right text-zinc-700">{item.qty}</td>
                       <td className="py-3 pr-4 text-right text-zinc-700">{formatRupiah(price)}</td>
-                      <td className="py-3 pr-4 text-right text-zinc-700">{item.diskonPersen}%</td>
+                      <td className="py-3 pr-4 text-right text-zinc-700">{diskonLabel}</td>
                       <td className="py-3 pr-0 text-right font-semibold text-zinc-900">{formatRupiah(rowSubtotal)}</td>
                     </tr>
                   );
@@ -1105,11 +1114,9 @@ export default function BuatInvoicePenjualanPage() {
             <span className="mb-1.5 block text-sm font-medium text-zinc-700">Jumlah Dibayar</span>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400">Rp</span>
-              <input
-                type="number"
-                min={0}
+              <RupiahInput
                 value={dibayar}
-                onChange={(e) => setDibayar(e.target.value)}
+                onChange={setDibayar}
                 placeholder="0 (belum dibayar)"
                 className={`${inputClass} pl-8`}
               />

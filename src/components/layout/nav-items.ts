@@ -2,6 +2,7 @@ import {
   Building2,
   ClipboardList,
   Home,
+  MapPin,
   Package,
   Settings,
   ShieldCheck,
@@ -86,6 +87,7 @@ export const navSections: NavSection[] = [
     items: [
       { label: "Pengaturan", href: "/pengaturan", icon: Settings, module: "pengaturan" },
       { label: "Manajemen User", href: "/manajemen-user", icon: ShieldCheck, module: "manajemen-user" },
+      { label: "Lokasi", href: "/lokasi", icon: MapPin, module: "pengaturan" },
     ],
   },
 ];

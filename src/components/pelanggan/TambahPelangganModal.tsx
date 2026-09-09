@@ -5,6 +5,7 @@ import { X, FileText } from "lucide-react";
 import { api } from "@/lib/api";
 import { Pelanggan, StatusPelanggan } from "@/lib/types";
 import { LookupSearchSelectField } from "@/components/ui/LookupSearchSelectField";
+import { DateInput } from "@/components/ui/DateInput";
 
 interface TambahPelangganModalProps {
   pelanggan?: Pelanggan;
@@ -145,12 +146,7 @@ export function TambahPelangganModal({ pelanggan, onClose, onSaved }: TambahPela
                 </Field>
               </div>
               <Field label="Tanggal Lahir">
-                <input
-                  type="date"
-                  value={tanggalLahir}
-                  onChange={(e) => setTanggalLahir(e.target.value)}
-                  className={inputClass}
-                />
+                <DateInput value={tanggalLahir} onChange={setTanggalLahir} />
               </Field>
             </div>
 
